@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nota de Fechamento de Chamados</title>
+<style>
+:root{--bg:#f1f4f9;--card:#fff;--pri:#1f4e9c;--pri2:#173b78;--txt:#1d2733;--mut:#6b7788;--bd:#d8dfe9;--ok:#1e8e50;--warn:#c77700}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt)}
+header{background:var(--pri);color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+header h1{font-size:18px;margin:0}
+.src{display:flex;align-items:center;gap:10px;font-size:13px}
+.src label.btn{background:rgba(255,255,255,.18);padding:6px 12px;border-radius:6px;cursor:pointer}
+.src label.btn:hover{background:rgba(255,255,255,.3)}
+.src input{display:none}
+main{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;padding:20px;max-width:1400px;margin:auto}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card h2{margin:0 0 14px;font-size:15px;text-transform:uppercase;letter-spacing:.5px;color:var(--pri)}
+.field{margin-bottom:16px}
+.field>label,.lbl{display:block;font-weight:600;font-size:14px;margin-bottom:2px}
+.hint{font-size:12px;color:var(--mut);margin-bottom:5px}
+input[type=text],textarea,select{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:6px;font:inherit;font-size:14px;background:#fff}
+input:focus,textarea:focus,select:focus{outline:2px solid #9bb8e8;border-color:var(--pri)}
+textarea{min-height:90px;resize:vertical}
+.radios{display:flex;gap:8px;flex-wrap:wrap}
+.radios label{border:1px solid var(--bd);border-radius:6px;padding:7px 12px;cursor:pointer;font-size:14px;display:flex;gap:6px;align-items:center}
+.radios label:has(input:checked){border-color:var(--pri);background:#e8effb;font-weight:600}
+.cond{margin-top:8px;display:none}
+.cond.show{display:block}
+.counter{font-size:12px;margin-top:4px;color:var(--mut)}
+.counter.ok{color:var(--ok)}.counter.bad{color:var(--warn)}
+.combo{position:relative}
+.list{position:absolute;z-index:10;left:0;right:0;top:100%;max-height:220px;overflow:auto;background:#fff;border:1px solid var(--bd);border-radius:6px;box-shadow:0 6px 16px rgba(0,0,0,.12);display:none}
+.list.open{display:block}
+.list div{padding:8px 10px;font-size:14px;cursor:pointer}
+.list div:hover,.list div.act{background:#e8effb}
+.list .empty{color:var(--mut);cursor:default}
+.status{font-size:12px;color:var(--mut);margin-top:4px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+button{border:0;border-radius:6px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+.b-pri{background:var(--pri);color:#fff}.b-pri:hover{background:var(--pri2)}
+.b-sec{background:#e5e9f0;color:var(--txt)}.b-sec:hover{background:#d5dbe6}
+.b-pri.done{background:var(--ok)}
+pre{white-space:pre-wrap;word-wrap:break-word;background:#0f1b2d;color:#e6edf7;padding:16px;border-radius:8px;font:13px/1.55 Consolas,monospace;min-height:260px;margin:0 0 14px}
+.sticky{position:sticky;top:16px;align-self:start}
+</style>
+</head>
+<body>
+<header>
+  <h1>📋 Nota de Fechamento de Chamados</h1>
+  <div class="src">
+    <button id="syncGitBtn" class="btn" style="background:rgba(255,255,255,.2);color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:5px;">🔄 Atualizar do Git</button>
+    <span id="srcStatus">Planilha não carregada</span>
+    <label class="btn">Carregar planilha (.xlsx)<input type="file" id="file" accept=".xlsx,.xls"></label>
+  </div>
+</header>
+<main>
+  <section class="card">
+    <h2>Dados do fechamento</h2>
+
+    <div class="field">
+      <label for="situacao">Situação reportada</label>
+      <div class="hint">Situação reportada pelo usuário.</div>
+      <textarea id="situacao"></textarea>
+    </div>
+
+    <div class="field">
+      <label for="acao">Ação tomada (Root Cause detalhada)</label>
+      <div class="hint">Situação encontrada após análise e o que foi realizado.</div>
+      <textarea id="acao"></textarea>
+    </div>
+
+    <div class="field">
+      <span class="lbl">Executado WA? (AMS ou OPERACIONAL)</span>
+      <div class="radios">
+        <label><input type="radio" name="wa" value="Não" checked> Não</label>
+        <label><input type="radio" name="wa" value="Sim - AMS"> Sim - AMS</label>
+        <label><input type="radio" name="wa" value="Sim - OPERACIONAL"> Sim - OPERACIONAL</label>
+      </div>
+      <div class="cond" id="waBox">
+        <label class="hint" for="waQual">Qual WA foi aplicado?</label>
+        <input type="text" id="waQual" placeholder="Descreva o WA aplicado">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="rcSearch">Rootcause</label>
+      <div class="hint">Pesquise e selecione. Sem planilha, digite livremente.</div>
+      <div class="combo">
+        <input type="text" id="rcSearch" placeholder="Digite para buscar / informar a Rootcause" autocomplete="off">
+        <div class="list" id="rcList"></div>
+      </div>
+      <div class="status" id="rcStatus">Modo manual (planilha não carregada).</div>
+    </div>
+
+    <div class="field">
+      <label for="ofensor">Ofensor</label>
+      <div class="hint">Resumo em 4 a 5 palavras.</div>
+      <input type="text" id="ofensor">
+      <div class="counter" id="ofCount">0 palavras</div>
+    </div>
+
+    <div class="field">
+      <span class="lbl">Existe PRB/OP?</span>
+      <div class="radios">
+        <label><input type="radio" name="prb" value="Não" checked> Não</label>
+        <label><input type="radio" name="prb" value="Sim"> Sim</label>
+      </div>
+      <div class="cond" id="prbBox">
+        <label class="hint" for="prbNum">Número/Identificador do PRB/OP</label>
+        <input type="text" id="prbNum">
+      </div>
+    </div>
+  </section>
+
+  <aside class="card sticky">
+    <h2>Pré-visualização</h2>
+    <div class="status" id="trStatus"></div>
+    <pre id="preview"></pre>
+    <div class="actions">
+      <button class="b-pri" id="copy">Copiar para Área de Transferência</button>
+      <button class="b-sec" id="clear">Limpar Formulário</button>
+      <select id="lang" title="Idioma da nota" style="width:auto;padding:8px 6px">
+        <option value="pt">pt-br</option>
+        <option value="en">EN</option>
+        <option value="es">ES</option>
+      </select>
+    </div>
+  </aside>
+</main>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const LS_KEY = 'fechamento_rootcauses';
+let rootcauses = [];
+
+/* ===== Formato do texto gerado (edite aqui se necessário) ===== */
+const I18N = {
+  pt: {sit:'Situação reportada', acao:'Ação tomada', wa:'Executado WA? (AMS ou OPERACIONAL)', rc:'Rootcause', of:'Ofensor', prb:'Existe PRB/OP?', no:'Não', yes:'Sim', ams:'AMS', op:'OPERACIONAL'},
+  en: {sit:'Reported situation', acao:'Action taken', wa:'WA executed? (AMS or OPERATIONAL)', rc:'Root cause', of:'Offender', prb:'Is there a PRB/OP?', no:'No', yes:'Yes', ams:'AMS', op:'OPERATIONAL'},
+  es: {sit:'Situación reportada', acao:'Acción tomada', wa:'¿WA ejecutado? (AMS u OPERACIONAL)', rc:'Rootcause', of:'Ofensor', prb:'¿Existe PRB/OP?', no:'No', yes:'Sí', ams:'AMS', op:'OPERACIONAL'}
+};
+/* ===== Tradução do conteúdo digitado (origem: português) =====
+   1) API nativa do Chrome/Edge (Translator) - roda no próprio navegador, sem enviar dados;
+   2) Fallback: serviço online MyMemory (precisa de internet e envia o texto ao serviço). */
+const trCache = {}, trors = {};
+async function nativeTranslate(text, to) {
+  if (typeof Translator === 'undefined') throw new Error('sem API nativa');
+  if (!trors[to]) {
+    const av = await Translator.availability({sourceLanguage: 'pt', targetLanguage: to});
+    if (av === 'unavailable') throw new Error('par não suportado');
+    trors[to] = Translator.create({sourceLanguage: 'pt', targetLanguage: to});
+  }
+  return (await trors[to]).translate(text);
+}
+function chunks(text, max = 450) {
+  const out = []; let cur = '';
+  for (const part of text.split(/(?<=[.!?\n])\s*/)) {
+    if ((cur + ' ' + part).length > max && cur) { out.push(cur); cur = part; } else cur = cur ? cur + ' ' + part : part;
+  }
+  if (cur) out.push(cur);
+  return out.flatMap(c => c.length > max ? c.match(new RegExp('.{1,' + max + '}', 'g')) : [c]);
+}
+async function onlineTranslate(text, to) {
+  const res = [];
+  for (const c of chunks(text)) {
+    const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(c) + '&langpair=pt|' + to);
+    const j = await r.json();
+    if (!j.responseData || j.responseStatus != 200) throw new Error('falha online');
+    res.push(j.responseData.translatedText);
+  }
+  return res.join(' ');
+}
+async function tr(text, lang) {
+  text = text.trim();
+  if (lang === 'pt' || !text) return text;
+  const k = lang + '|' + text;
+  if (trCache[k]) return trCache[k];
+  let out;
+  try { out = await nativeTranslate(text, lang); }
+  catch (_) { out = await onlineTranslate(text, lang); }
+  return trCache[k] = out;
+}
+
+async function buildNote() {
+  const L = $('lang').value, t = I18N[L];
+  const wa = document.querySelector('input[name=wa]:checked').value;
+  const prb = document.querySelector('input[name=prb]:checked').value;
+  const [sit, acao, q, rc, of] = await Promise.all(
+    ['situacao', 'acao', 'waQual', 'rcSearch', 'ofensor'].map(id => tr($(id).value, L)));
+  const n = $('prbNum').value.trim();
+  const waTxt = wa === 'Não' ? t.no : t.yes + ' - ' + (wa.includes('AMS') ? t.ams : t.op) + (q ? ' - ' + q : '');
+  const prbTxt = prb === 'Não' ? t.no : t.yes + (n ? ' - ' + n : '');
+  return [
+    t.sit + ': ' + sit,
+    t.acao + ': ' + acao,
+    t.wa + ': ' + waTxt,
+    t.rc + ': ' + rc,
+    t.of + ': ' + of,
+    t.prb + ': ' + prbTxt
+  ].join('\n');
+}
+let seq = 0, timer, lastNote = '', pending = Promise.resolve();
+function refreshPreview() {
+  const my = ++seq, st = $('trStatus');
+  if ($('lang').value !== 'pt') st.textContent = 'Traduzindo…';
+  pending = buildNote().then(txt => {
+    if (my !== seq) return;
+    lastNote = txt; $('preview').textContent = txt;
+    st.textContent = $('lang').value === 'pt' ? '' : 'Texto traduzido automaticamente — revise antes de colar.';
+  }).catch(() => {
+    if (my !== seq) return;
+    st.textContent = '⚠ Não foi possível traduzir (sem API nativa e sem internet). Exibindo em português.';
+    $('lang').dataset.fail = '1';
+  });
+  return pending;
+}
+function update() {
+  $('waBox').classList.toggle('show', document.querySelector('input[name=wa]:checked').value !== 'Não');
+  $('prbBox').classList.toggle('show', document.querySelector('input[name=prb]:checked').value === 'Sim');
+  const n = $('ofensor').value.trim().split(/\s+/).filter(Boolean).length;
+  const c = $('ofCount');
+  c.textContent = n + (n === 1 ? ' palavra' : ' palavras') + (n >= 4 && n <= 5 ? ' ✔' : ' (ideal: 4 a 5)');
+  c.className = 'counter ' + (n === 0 ? '' : (n >= 4 && n <= 5 ? 'ok' : 'bad'));
+  clearTimeout(timer);
+  timer = setTimeout(refreshPreview, $('lang').value === 'pt' ? 0 : 700);
+}
+document.querySelectorAll('input,textarea').forEach(e => e.addEventListener('input', update));
+
+/* ===== Combo pesquisável ===== */
+let activeIdx = -1;
+function renderList() {
+  const q = $('rcSearch').value.toLowerCase();
+  const items = rootcauses.filter(r => r.toLowerCase().includes(q)).slice(0, 200);
+  const l = $('rcList');
+  l.innerHTML = '';
+  if (!rootcauses.length) { l.classList.remove('open'); return; }
+  if (!items.length) l.innerHTML = '<div class="empty">Nenhum resultado</div>';
+  items.forEach((r, i) => {
+    const d = document.createElement('div');
+    d.textContent = r;
+    d.onmousedown = e => { e.preventDefault(); pick(r); };
+    l.appendChild(d);
+  });
+  activeIdx = -1;
+  l.classList.add('open');
+}
+function pick(v) { $('rcSearch').value = v; $('rcList').classList.remove('open'); update(); }
+$('rcSearch').addEventListener('input', renderList);
+$('rcSearch').addEventListener('focus', renderList);
+$('rcSearch').addEventListener('blur', () => $('rcList').classList.remove('open'));
+$('rcSearch').addEventListener('keydown', e => {
+  const its = [...$('rcList').querySelectorAll('div:not(.empty)')];
+  if (!its.length) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    activeIdx = (activeIdx + (e.key === 'ArrowDown' ? 1 : -1) + its.length) % its.length;
+    its.forEach((x, i) => x.classList.toggle('act', i === activeIdx));
+    its[activeIdx].scrollIntoView({block: 'nearest'});
+  } else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); pick(its[activeIdx].textContent); }
+  else if (e.key === 'Escape') $('rcList').classList.remove('open');
+});
+
+/* ===== Planilha ===== */
+function setRootcauses(list, origem) {
+  rootcauses = list;
+  $('srcStatus').textContent = '✔ ' + origem + ' (' + list.length + ' rootcauses)';
+  $('rcStatus').textContent = list.length + ' opções carregadas. Também é possível digitar texto livre.';
+}
+function parseWorkbook(buf) {
+  const wb = XLSX.read(buf, {type: 'array'});
+  for (const name of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], {header: 1, defval: ''});
+    // procura cabeçalho contendo "rootcause" / "root cause"
+    for (let r = 0; r < Math.min(rows.length, 30); r++) {
+      const c = rows[r].findIndex(v => /^\s*root\s*[-_ ]?cause\s*$/i.test(String(v)));
+      if (c >= 0) {
+        const set = new Set();
+        for (let i = r + 1; i < rows.length; i++) { const v = String(rows[i][c] ?? '').trim(); if (v) set.add(v); }
+        if (set.size) return [...set];
+      }
+    }
+  }
+  throw new Error('Coluna "Rootcause" não encontrada.');
+}
+$('file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const list = parseWorkbook(await f.arrayBuffer());
+    setRootcauses(list, f.name);
+    try { localStorage.setItem(LS_KEY, JSON.stringify({name: f.name, list})); } catch (_) {}
+  } catch (err) { $('srcStatus').textContent = '⚠ ' + err.message; }
+});
+// Navegadores bloqueiam leitura automática via file://; reaproveita a última planilha carregada.
+try {
+  const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+  if (s && s.list && s.list.length) setRootcauses(s.list, s.name + ' (salva)');
+} catch (_) {}
+
+/* ===== Consulta e Sincronização com o GitHub ===== */
+const GITHUB_REPO = 'elivelton7/FechamentoNote';
+const GITHUB_BRANCH = 'main';
+const GITHUB_SHEET_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/Tabela_Root_Cause.xlsx`;
+const GITHUB_API_COMMITS = `https://api.github.com/repos/${GITHUB_REPO}/commits/${GITHUB_BRANCH}`;
+
+async function syncWithGitHub(manual = false) {
+  const btn = $('syncGitBtn');
+  if (manual && btn) btn.textContent = '⏳ Verificando Git...';
+  try {
+    // 1. Verifica último commit
+    const commitResp = await fetch(GITHUB_API_COMMITS, { cache: 'no-store' });
+    if (commitResp.ok) {
+      const commitData = await commitResp.json();
+      const latestSha = commitData.sha;
+      const cachedSha = localStorage.getItem('fechamento_git_sha');
+      if (cachedSha && cachedSha !== latestSha) {
+        if (confirm('Há atualizações no repositório GitHub! Se você iniciou pelo iniciar.bat, feche e abra por ele para baixar o index.html novo. Deseja baixar a planilha atualizada agora?')) {
+          await downloadSheetFromGitHub(latestSha);
+          return;
+        }
+      }
+      localStorage.setItem('fechamento_git_sha', latestSha);
+    }
+
+    // 2. Tenta carregar a planilha se não tiver nenhuma ou se for manual
+    const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (manual || !s || !s.list || !s.list.length) {
+      await downloadSheetFromGitHub();
+    }
+    if (manual && btn) {
+      btn.textContent = '✔ Git Atualizado';
+      setTimeout(() => { btn.textContent = '🔄 Atualizar do Git'; }, 2500);
+    }
+  } catch (err) {
+    console.warn('Erro ao consultar GitHub:', err);
+    if (manual && btn) {
+      btn.textContent = '⚠ Falha no Git';
+      setTimeout(() => { btn.textContent = '🔄 Atualizar do Git'; }, 3000);
+      alert('Não foi possível conectar ao GitHub no momento. Usando dados locais.');
+    }
+  }
+}
+
+async function downloadSheetFromGitHub(newSha = null) {
+  const resp = await fetch(GITHUB_SHEET_URL + '?t=' + Date.now());
+  if (!resp.ok) throw new Error('Planilha não encontrada no repositório');
+  const buf = await resp.arrayBuffer();
+  const list = parseWorkbook(buf);
+  setRootcauses(list, 'Tabela_Root_Cause.xlsx (do Git)');
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ name: 'Tabela_Root_Cause.xlsx (do Git)', list }));
+    if (newSha) localStorage.setItem('fechamento_git_sha', newSha);
+  } catch (_) {}
+}
+
+$('syncGitBtn').addEventListener('click', () => syncWithGitHub(true));
+setTimeout(() => syncWithGitHub(false), 800);
+
+/* ===== Ações ===== */
+$('lang').value = localStorage.getItem('fechamento_lang') || 'pt';
+$('lang').addEventListener('change', () => { localStorage.setItem('fechamento_lang', $('lang').value); clearTimeout(timer); refreshPreview(); });
+$('copy').addEventListener('click', async () => {
+  const b = $('copy'), old = b.textContent;
+  let t;
+  try { t = await buildNote(); }
+  catch (_) { b.textContent = '⚠ Falha na tradução'; setTimeout(() => b.textContent = old, 2500); return; }
+  try { await navigator.clipboard.writeText(t); }
+  catch (_) {
+    const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  b.textContent = '✔ Copiado com sucesso!'; b.classList.add('done');
+  setTimeout(() => { b.textContent = old; b.classList.remove('done'); }, 2000);
+});
+$('clear').addEventListener('click', () => {
+  document.querySelectorAll('input[type=text],textarea').forEach(e => { if (e.id !== 'file') e.value = ''; });
+  document.querySelectorAll('input[type=radio][value="Não"]').forEach(r => r.checked = true);
+  update();
+});
+update();
+</script>
+</body>
+</html>
