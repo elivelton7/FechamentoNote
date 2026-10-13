@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -103,6 +103,12 @@ pre{white-space:pre-wrap;word-wrap:break-word;background:#0f1b2d;color:#e6edf7;p
     </div>
 
     <div class="field">
+      <label for="processo">Processo</label>
+      <div class="hint">Área / processo de negócio afetado (ex: Faturamento, Expedição, Compras, etc.).</div>
+      <input type="text" id="processo" placeholder="Informe o processo / área afetada">
+    </div>
+
+    <div class="field">
       <span class="lbl">Existe PRB/OP?</span>
       <div class="radios">
         <label><input type="radio" name="prb" value="Não" checked> Não</label>
@@ -139,9 +145,9 @@ let rootcauses = [];
 
 /* ===== Formato do texto gerado (edite aqui se necessário) ===== */
 const I18N = {
-  pt: {sit:'Situação reportada', acao:'Ação tomada', wa:'Executado WA? (AMS ou OPERACIONAL)', rc:'Rootcause', of:'Ofensor', prb:'Existe PRB/OP?', no:'Não', yes:'Sim', ams:'AMS', op:'OPERACIONAL'},
-  en: {sit:'Reported situation', acao:'Action taken', wa:'WA executed? (AMS or OPERATIONAL)', rc:'Root cause', of:'Offender', prb:'Is there a PRB/OP?', no:'No', yes:'Yes', ams:'AMS', op:'OPERATIONAL'},
-  es: {sit:'Situación reportada', acao:'Acción tomada', wa:'¿WA ejecutado? (AMS u OPERACIONAL)', rc:'Rootcause', of:'Ofensor', prb:'¿Existe PRB/OP?', no:'No', yes:'Sí', ams:'AMS', op:'OPERACIONAL'}
+  pt: {sit:'Situação reportada', acao:'Ação tomada', wa:'Executado WA? (AMS ou OPERACIONAL)', rc:'Rootcause', of:'Ofensor', proc:'Processo', prb:'Existe PRB/OP?', no:'Não', yes:'Sim', ams:'AMS', op:'OPERACIONAL'},
+  en: {sit:'Reported situation', acao:'Action taken', wa:'WA executed? (AMS or OPERATIONAL)', rc:'Root cause', of:'Offender', proc:'Process', prb:'Is there a PRB/OP?', no:'No', yes:'Yes', ams:'AMS', op:'OPERATIONAL'},
+  es: {sit:'Situación reportada', acao:'Acción tomada', wa:'¿WA ejecutado? (AMS u OPERACIONAL)', rc:'Rootcause', of:'Ofensor', proc:'Proceso', prb:'¿Existe PRB/OP?', no:'No', yes:'Sí', ams:'AMS', op:'OPERACIONAL'}
 };
 /* ===== Tradução do conteúdo digitado (origem: português) =====
    1) API nativa do Chrome/Edge (Translator) - roda no próprio navegador, sem enviar dados;
@@ -189,8 +195,8 @@ async function buildNote() {
   const L = $('lang').value, t = I18N[L];
   const wa = document.querySelector('input[name=wa]:checked').value;
   const prb = document.querySelector('input[name=prb]:checked').value;
-  const [sit, acao, q, rc, of] = await Promise.all(
-    ['situacao', 'acao', 'waQual', 'rcSearch', 'ofensor'].map(id => tr($(id).value, L)));
+  const [sit, acao, q, rc, of, proc] = await Promise.all(
+    ['situacao', 'acao', 'waQual', 'rcSearch', 'ofensor', 'processo'].map(id => tr($(id).value, L)));
   const n = $('prbNum').value.trim();
   const waTxt = wa === 'Não' ? t.no : t.yes + ' - ' + (wa.includes('AMS') ? t.ams : t.op) + (q ? ' - ' + q : '');
   const prbTxt = prb === 'Não' ? t.no : t.yes + (n ? ' - ' + n : '');
@@ -200,6 +206,7 @@ async function buildNote() {
     t.wa + ': ' + waTxt,
     t.rc + ': ' + rc,
     t.of + ': ' + of,
+    t.proc + ': ' + proc,
     t.prb + ': ' + prbTxt
   ].join('\n');
 }
