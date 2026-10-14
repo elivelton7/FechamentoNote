@@ -324,7 +324,7 @@ async function syncWithGitHub(manual = false) {
       const latestSha = commitData.sha;
       const cachedSha = localStorage.getItem('fechamento_git_sha');
       if (cachedSha && cachedSha !== latestSha) {
-        if (confirm('Há atualizações no repositório GitHub! Se você iniciou pelo iniciar.bat, feche e abra por ele para baixar o index.html novo. Deseja baixar a planilha atualizada agora?')) {
+        if (confirm('Há atualizações no repositório GitHub (código ou planilha)! Para carregar as telas novas, feche e abra pelo iniciar.bat. Deseja atualizar a planilha agora?')) {
           await downloadSheetFromGitHub(latestSha);
           return;
         }
